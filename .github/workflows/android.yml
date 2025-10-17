@@ -1,32 +1,57 @@
-name: Android APK
+name: Android APK (Cordova, pinned Gradle 8.7)
+
 on:
-  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node (Cordova CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Cordova
-        run: npm i -g cordova
-      - name: Android SDK
+          java-version: 17
+
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-      - name: SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "cmdline-tools;latest"
-      - name: Build debug APK (cordova-android@12)
+
+      - name: Accept Android SDK licenses + install needed packages
         run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+
+      - name: Install Cordova
+        run: npm i -g cordova@12
+
+      - name: Prepare Android platform (Cordova)
+        run: |
+          cordova platform rm android || true
           cordova platform add android@12.0.1
-          cordova build android --debug --no-telemetry
-      - name: Upload APK
+
+      - name: Generate Gradle wrapper (8.7) for Android platform
+        run: |
+          gradle -p platforms/android wrapper --gradle-version 8.7
+          chmod +x platforms/android/gradlew
+
+      - name: Build Debug APK using the platform wrapper
+        run: |
+          cd platforms/android
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SpadesTouch-debug
+          name: Spades-debug-apk
           path: platforms/android/app/build/outputs/apk/debug/*.apk
