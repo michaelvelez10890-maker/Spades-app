@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,14 +39,27 @@ jobs:
         run: |
           cordova platform rm android || true
           cordova platform add android@12.0.1
+          ls -la
+          ls -la platforms || true
+          ls -la platforms/android || true
 
-      - name: Ensure Gradle wrapper 8.7 (platform)
+      # Install Gradle 8.7 on the runner (so wrapper generation uses 8.7, not 9.x)
+      - name: Install Gradle 8.7 (SDKMAN)
         run: |
-          cd platforms/android
-          chmod +x gradlew || true
-          ./gradlew wrapper --gradle-version 8.7
-          chmod +x gradlew
+          curl -s "https://get.sdkman.io" | bash
+          source "$HOME/.sdkman/bin/sdkman-init.sh"
+          sdk install gradle 8.7
+          echo "$HOME/.sdkman/candidates/gradle/current/bin" >> $GITHUB_PATH
+          gradle -v
 
+      # Generate wrapper files INSIDE platforms/android using Gradle 8.7
+      - name: Generate Gradle wrapper 8.7 in platform
+        run: |
+          gradle -p platforms/android wrapper --gradle-version 8.7
+          ls -la platforms/android
+          chmod +x platforms/android/gradlew
+
+      # Now build with the platform wrapper (safe)
       - name: Build Debug APK
         run: |
           cd platforms/android
