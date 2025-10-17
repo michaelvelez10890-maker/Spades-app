@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spades Touch</title>
+<style>body{font-family:sans-serif;margin:0;background:#0b1726;color:#e7f0ff}
+header{padding:14px 16px;background:#10223a;font-weight:700}
+main{padding:16px}button{padding:12px 16px;border:0;border-radius:10px;margin:8px 0}
+.deal{background:#2f7d32;color:#fff}.play{background:#1b5faa;color:#fff}
+.log{white-space:pre-wrap;background:#0f1b2c;padding:12px;border-radius:10px;min-height:140px}
+.hand{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.card{padding:8px 10px;border-radius:8px;background:#172a46}</style>
+<header>Spades Touch — demo</header>
+<main>
+<button class=deal id=dealBtn>Deal New Hand</button>
+<div class=hand id=hand></div>
+<button class=play id=playBtn disabled>Auto-Play Trick</button>
+<div class=log id=log>Tap “Deal New Hand”. Demo just to ship an APK now.</div>
+</main>
+<script>
+const SUITS=["♠","♥","♦","♣"],RANKS=["2","3","4","5","6","7","8","9","10","J","Q","K","A"],v=r=>RANKS.indexOf(r),sp=c=>c.s==="♠";
+let deck=[],P=[],C=[],t=[],spB=false;function build(){deck=[];for(let s of SUITS)for(let r of RANKS)deck.push({r,s,code:r+s});
+for(let i=deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[deck[i],deck[j]]=[deck[j],deck[i]]}}
+function deal(n=5){build();P=[];C=[];t=[];spB=false;for(let i=0;i<n;i++){P.push(deck.pop());C.push(deck.pop())}
+P.sort((a,b)=>a.s===b.s?v(a.r)-v(b.r):SUITS.indexOf(a.s)-SUITS.indexOf(b.s));
+C.sort((a,b)=>a.s===b.s?v(a.r)-v(b.r):SUITS.indexOf(a.s)-SUITS.indexOf(b.s));draw();log("Dealt. You lead first.");playBtn.disabled=false}
+function draw(){hand.innerHTML="";P.forEach((c,i)=>{const d=document.createElement("div");d.className="card";d.textContent=c.code;d.onclick=()=>play(i);hand.appendChild(d)})}
+function log(s){logEl.textContent+="\n"+s;logEl.scrollTop=logEl.scrollHeight}
+function legal(h,lead){if(!lead)return h;const same=h.filter(c=>c.s===lead.s);return same.length?same:h}
+function win(a,b,lead){if(sp(a)&&!sp(b))return 0;if(!sp(a)&&sp(b))return 1;if(a.s===b.s)return v(a.r)>v(b.r)?0:1;if(a.s===lead.s)return 0;if(b.s===lead.s)return 1;return 0}
+function cpu(lead){const o=legal(C,lead);return C.splice(C.indexOf(o[0]),1)[0]}
+function play(i){if(!P[i])return;const lead=t[0],opts=legal(P,lead);if(!opts.includes(P[i])){log("Illegal play.");return}
+const me=P.splice(i,1)[0];if(sp(me))spB=true;t.push(me);const ai=cpu(lead||me);if(sp(ai))spB=true;t.push(ai);
+const w=win(t[0],t[1],lead||me);log(`You: ${t[0].code} | CPU: ${t[1].code} → ${w===0?"You":"CPU"} win`);t=[];draw();
+if(P.length===0){log("Hand over. Deal again.");playBtn.disabled=true}}
+dealBtn.onclick=()=>deal(5);const playBtn=document.getElementById("playBtn"),logEl=document.getElementById("log");
+playBtn.onclick=()=>{const non=P.filter(c=>c.s!=="♠");play(non.length?P.indexOf(non[0]):0)};
+</script>
