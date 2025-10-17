@@ -1,4 +1,4 @@
-name: Android APK (Cordova, pinned Gradle 8.7)
+name: Android APK (Cordova, Gradle 8.7)
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,28 +26,30 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Accept Android SDK licenses + install needed packages
+      - name: Accept licenses + install SDKs
         run: |
           yes | sdkmanager --licenses
-          sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2"
 
       - name: Install Cordova
         run: npm i -g cordova@12
 
-      - name: Prepare Android platform (Cordova)
+      - name: Prepare Android platform
         run: |
           cordova platform rm android || true
           cordova platform add android@12.0.1
 
-      - name: Generate Gradle wrapper (8.7) for Android platform
-        run: |
-          gradle -p platforms/android wrapper --gradle-version 8.7
-          chmod +x platforms/android/gradlew
-
-      - name: Build Debug APK using the platform wrapper
+      - name: Ensure Gradle wrapper 8.7 (platform)
         run: |
           cd platforms/android
-          ./gradlew assembleDebug --stacktrace
+          chmod +x gradlew || true
+          ./gradlew wrapper --gradle-version 8.7
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: |
+          cd platforms/android
+          ./gradlew assembleDebug --stacktrace --warning-mode all
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
