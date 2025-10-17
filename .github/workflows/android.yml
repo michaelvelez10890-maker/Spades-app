@@ -17,14 +17,12 @@ jobs:
           node-version: '20'
       - name: Install Cordova
         run: npm i -g cordova
-      - name: Install Android SDK
+      - name: Android SDK
         uses: android-actions/setup-android@v3
       - name: SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "cmdline-tools;latest"
+      - name: Build debug APK (cordova-android@12)
         run: |
-          sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.2" "cmdline-tools;latest"
-      - name: Build debug APK (Cordova Android 12)
-        run: |
-          cordova platform rm android || true
           cordova platform add android@12.0.1
           cordova build android --debug --no-telemetry
       - name: Upload APK
